@@ -1,0 +1,131 @@
+:root, #host-fix {
+	--team-color-red: coral;
+	--team-color-blue: BLUE;
+	--cell-color: var(--lumo-shade-50pct);
+	--cell-color-flipped: var(--lumo-shade-70pct);
+}
+
+[theme~="dark"] {
+	--team-color-red: coral;
+	--team-color-blue: LIGHTBLUE;
+	--cell-color: var(--lumo-shade-20pct);
+	--cell-color-flipped: var(--lumo-shade-70pct);
+}
+
+/* Main layout */
+h1, h2, h3, h4, h5, h6, button {
+	text-transform: uppercase;
+}
+
+a[highlight] {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.header {
+    padding: 0 var(--lumo-space-m);
+}
+
+.header h1.logo {
+    font-size: 1em;
+    margin: var(--lumo-space-m);
+}
+.header h1.logo:hover {
+	color: var(--lumo-link-color);
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+label.error {
+	color: var(--lumo-error-text-color);
+}
+
+/*game view*/
+.game {
+	position: relative;
+	margin-left: auto;
+	margin-right: auto;
+}
+.game.team-red #label-current-team, .game.team-red #button-next-team,
+	.game .label-remaining.team-red {
+	color: var(--team-color-red);
+}
+.game.team-blue #label-current-team, .game.team-blue #button-next-team,
+	.game .label-remaining.team-blue {
+	color: var(--team-color-blue);
+}
+
+.game #game-area {
+	position: relative;
+}
+.game #game-area #player-information {
+	position: absolute;
+	top: 0;
+	left: -51%;
+	width: 50%;
+}
+
+@media all and (max-width: 1100px) {  
+    .game .player-information {
+        display: none;
+   }
+}
+
+/* game area component */
+.game-field {
+	height: 100%;
+	width: 100%;
+	
+	display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+	
+	text-transform: uppercase;
+}
+
+.game-field.game-field-spymaster .game-field-cell {
+	cursor: wait;
+	pointer-events: none;
+}
+.game-field.game-won {
+	pointer-events: none;
+}
+.game-field.game-won.game-won-red {
+	background-color: var(--team-color-red);
+}
+.game-field.game-won.game-won-blue {
+	background-color: var(--team-color-blue);
+}
+.game-field.game-won .game-field-cell {
+	cursor: default;
+}
+
+.game-field .game-field-cell {
+	height: 18%;
+	width: 18%;
+	margin: 1%;
+	
+	display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+	cursor: pointer;
+	
+	color: WHITE;
+	background-color: var(--cell-color);
+}
+
+.game-field .game-field-cell.game-field-cell-flipped {
+	background-color: var(--cell-color-flipped);
+	cursor: default;
+	pointer-events: none;
+}
+.game-field .game-field-cell.game-field-cell-killer.game-field-cell-flipped, .game-field.game-field-spymaster .game-field-cell.game-field-cell-killer {
+	background-color: var(--lumo-shade);
+}
+.game-field .game-field-cell.game-field-cell-red.game-field-cell-flipped, .game-field.game-field-spymaster .game-field-cell.game-field-cell-red {
+	background-color: var(--team-color-red);
+}
+.game-field .game-field-cell.game-field-cell-blue.game-field-cell-flipped, .game-field.game-field-spymaster .game-field-cell.game-field-cell-blue {
+	background-color: var(--team-color-blue);
+}
