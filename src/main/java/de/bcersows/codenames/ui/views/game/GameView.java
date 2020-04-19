@@ -18,6 +18,7 @@ import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
@@ -58,6 +59,8 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
     /** Size of the game area. **/
     private static final String GAME_FIELD_SIZE = "700px";
 
+    /** CSS class name for the whole game area. **/
+    private static final String CSS_CLASSNAME_GAME = "game";
     /** CSS base class name for teams. **/
     private static final String CSS_CLASSNAME_TEAM = "team-";
     /** CSS class name for team red. **/
@@ -85,7 +88,7 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
     @NonNull
     private final transient CodenamesBroadcasterService broadcasterService;
 
-    private final Label labelGameName;
+    private final H3 labelGameName;
     private final CodenamesGameField gameField;
 
     private final Label labelCurrentTeam;
@@ -109,11 +112,12 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
         this.broadcasterService = broadcasterService;
 
         // set the class name and reset everything that was there before
-        setClassName("game");
+        setClassName(CSS_CLASSNAME_GAME);
+        this.setId(CSS_CLASSNAME_GAME);
 
         this.setAlignItems(Alignment.CENTER);
 
-        this.labelGameName = new Label();
+        this.labelGameName = new H3();
         this.gameField = new CodenamesGameField();
 
         this.labelCurrentTeam = new Label("Current team:");
@@ -138,6 +142,7 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
 
         final VerticalLayout playerInformation = new VerticalLayout(new H4("Teams"));
         playerInformation.setId(CSS_ID_PLAYER_INFORMATION);
+        playerInformation.setSizeUndefined();
 
         final Div gameArea = new Div(gameField, playerInformation);
         gameArea.setId(CSS_ID_GAME_AREA);
@@ -155,7 +160,7 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
      * Add the listeners to the elements.
      */
     private void addListeners() {
-        this.gameField.setGameUpdateEventListener(gameUpdateEvent -> doIfGameExists(game -> {
+        this.gameField.setGameUpdateEventListener(gameUpdateEvent -> doIfGameExists(gameUpdateEvent.getGameId(), game -> {
             if (gameUpdateEvent instanceof GameFieldUpdateEvent) {
                 game.getWords().stream().filter(gameField -> gameField.getId().equals(((GameFieldUpdateEvent) gameUpdateEvent).getGameFieldId())).findFirst()
                         .ifPresent(gameField -> {
@@ -163,7 +168,7 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
                             // TODO codenames send push to all clients
                             this.gameService.updateGameField(game.getId(), gameField);
 
-                            LOG.debug("Flipped: {}.", gameField);
+                            LOG.trace("{}: Flipped: {}.", game.getId(), gameField);
                         });
             }
 
@@ -194,6 +199,8 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
 
             UI.getCurrent().access(() -> {
                 this.labelGameName.setText(game.getName());
+                this.buttonNextTeam.setEnabled(true);
+                this.buttonNextTeam.setVisible(true);
 
                 // give the field definition to the game field
                 this.gameField.setFieldDefinition(game.getId(), game.getWords());
@@ -223,17 +230,20 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
         // only proceed if a game is known
         doIfGameExists(game -> {
             if (gameUpdateEvent instanceof GameFieldUpdateEvent) {
-                this.gameField.setFieldStatus((GameFieldUpdateEvent) gameUpdateEvent);
+                final GameFieldUpdateEvent gameFieldUpdateEvent = (GameFieldUpdateEvent) gameUpdateEvent;
+                this.gameField.setFieldStatus(gameFieldUpdateEvent);
 
                 // update the labels and announce a winner, if possible
-                updateRemainingLabelsTextAndSearchForWinner(game).ifPresent(this::announceWinner);
+                final Optional<PlayerTeam> possibleWinner = updateRemainingLabelsTextAndSearchForWinner(game);
+                if (possibleWinner.isPresent()) {
+                    this.announceWinner(possibleWinner.get());
+                } else
                 // or check if killer field was activated, which also means a winner (=the next team)
-                if (((GameFieldUpdateEvent) gameUpdateEvent).isKillerField()) {
+                if (gameFieldUpdateEvent.isKillerField()) {
                     announceWinner(game.getCurrentTeam().nextTeam());
-                }
-
+                } else
                 // if flipped wrong color, set next player
-                if (game.getCurrentTeam() != ((GameFieldUpdateEvent) gameUpdateEvent).getFieldTeam()) {
+                if (game.getCurrentTeam() != gameFieldUpdateEvent.getFieldTeam()) {
                     this.buttonNextTeam.click();
                 }
             } else if (gameUpdateEvent instanceof GameTurnEvent) {
@@ -248,15 +258,15 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
      * Update the game information.
      * 
      * @param nextTeam
+     *            the new team
      */
     private void updateGameInformation(@NonNull final PlayerTeam nextTeam) {
         UI.getCurrent().access(() -> {
             this.buttonNextTeam.setText("End turn of " + nextTeam);
             this.labelCurrentTeam.setText(nextTeam + "'s turn!");
 
-            final String className = CSS_CLASSNAME_TEAM + nextTeam.name().toLowerCase();
-            this.removeClassNames(CSS_CLASSNAME_TEAM_RED, CSS_CLASSNAME_TEAM_BLUE);
-            this.addClassName(className);
+            // set the CSS class to the game area
+            setOverallTeamCssClass(nextTeam);
         });
     }
 
@@ -295,7 +305,12 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
         UI.getCurrent().access(() -> {
             LOG.debug("Winner team is {}!", winnerTeam);
             this.labelCurrentTeam.setText(winnerTeam + " has won!");
-            this.gameField.setWon(winnerTeam);
+            this.addClassName(CSS_CLASSNAME_GAME_WON);
+
+            this.buttonNextTeam.setEnabled(false);
+            this.buttonNextTeam.setText(":)");
+
+            setOverallTeamCssClass(winnerTeam);
         });
     }
 
@@ -314,10 +329,28 @@ public class GameView extends VerticalLayout implements CodenamesUpdateView, Has
         });
     }
 
+    /**
+     * Sets the team's CSS class to the game area. <strong>Must be ensured that only being called inside of a UI access.</strong>
+     */
+    private void setOverallTeamCssClass(@NonNull final PlayerTeam nextTeam) {
+        final String className = CSS_CLASSNAME_TEAM + nextTeam.name().toLowerCase();
+        this.removeClassNames(CSS_CLASSNAME_TEAM_RED, CSS_CLASSNAME_TEAM_BLUE);
+        this.addClassName(className);
+    }
+
     @Override
     protected void onDetach(final DetachEvent detachEvent) {
         this.broadcasterRegistration.remove();
         this.broadcasterRegistration = null;
+    }
+
+    /**
+     * If a current game with the given ID is known, pass it to the given consumer and run it.
+     */
+    private void doIfGameExists(final long gameId, @NonNull final Consumer<Game> consumerIfGameExists) {
+        if (null != this.currentGame && this.currentGame.getId().longValue() == gameId) {
+            consumerIfGameExists.accept(this.currentGame);
+        }
     }
 
     /**

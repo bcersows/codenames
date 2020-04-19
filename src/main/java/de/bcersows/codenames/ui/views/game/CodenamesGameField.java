@@ -34,8 +34,6 @@ public class CodenamesGameField extends Component implements HasSize {
 
     /** CSS class name for the game field if someone won. **/
     private static final String CSS_CLASSNAME_GAME_FIELD = "game-field";
-    /** CSS class name for the game field if someone won. **/
-    private static final String CSS_CLASSNAME_GAME_WON = "game-won";
     /** CSS class name for a game field cell. **/
     private static final String CSS_CLASSNAME_GAME_FIELD_CELL = "game-field-cell";
     /** CSS base class name for a game field cell with more information. **/
@@ -117,14 +115,6 @@ public class CodenamesGameField extends Component implements HasSize {
         }
     }
 
-    /**
-     * Mark a game as won.
-     */
-    public void setWon(@NonNull final PlayerTeam winnerTeam) {
-        final String cssClassNameWinnerTeam = CSS_CLASSNAME_GAME_WON + "-" + winnerTeam.name().toLowerCase(Locale.UK);
-        this.fields.addClassNames(CSS_CLASSNAME_GAME_WON, cssClassNameWinnerTeam);
-    }
-
     /** Add a field. **/
     private void addField(@NonNull final GameField gameField) {
         final Div field = new Div();
@@ -142,14 +132,14 @@ public class CodenamesGameField extends Component implements HasSize {
         addConditionalFieldStyles(field, gameField.getTeam(), gameField.isKiller());
 
         field.addClickListener(clickEvent -> {
-            LOG.debug("Field clicked: {}", gameField.getWord());
+            LOG.trace("{}: Field clicked: {}", this.gameId, gameField.getWord());
 
             // TODO codenames: need to persist to DB and send outputs
             if (null != this.gameUpdateEventListener) {
                 this.gameUpdateEventListener
                         .onGameUpdateEvent(new GameFieldUpdateEvent(this.gameId, gameField.getId(), gameField.getTeam(), gameField.isKiller()));
             } else {
-                LOG.warn("No game update event listener set. Cannot notify peers.");
+                LOG.warn("{}: No game update event listener set. Cannot notify peers.", this.gameId);
             }
         });
 

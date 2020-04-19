@@ -15,9 +15,11 @@ import java.util.stream.Stream;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -36,6 +38,9 @@ import de.bcersows.codenames.helper.GameHelper;
 @Service
 public class GameService {
     private static final Logger LOG = LoggerFactory.getLogger(GameService.class);
+
+    @Value("${spring.profiles.active:Unknown}")
+    private String activeProfile;
 
     /** Repository to access the stored games. **/
     private final GameRepository gameRepository;
@@ -156,7 +161,8 @@ public class GameService {
     /** Populate data for testing. **/
     @PostConstruct
     public void populateTestData() {
-        if (gameRepository.count() == 0) {
+        // if no entities, populate them, but not for production
+        if (!StringUtils.equalsIgnoreCase("production", this.activeProfile) && gameRepository.count() == 0) {
             final Random r = new Random(0);
             gameRepository.saveAll(Stream.of("opphers", "frankensteins", "work").map(gameName -> {
                 final Game game = new Game(gameName, PlayerTeam.BLUE,

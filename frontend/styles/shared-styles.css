@@ -3,6 +3,7 @@
 	--team-color-blue: BLUE;
 	--cell-color: var(--lumo-shade-50pct);
 	--cell-color-flipped: var(--lumo-shade-70pct);
+	--cell-color-killer-flipped: var(--lumo-shade);
 }
 
 [theme~="dark"] {
@@ -10,10 +11,11 @@
 	--team-color-blue: LIGHTBLUE;
 	--cell-color: var(--lumo-shade-20pct);
 	--cell-color-flipped: var(--lumo-shade-70pct);
+	--cell-color-killer-flipped: BLACK;
 }
 
 /* Main layout */
-h1, h2, h3, h4, h5, h6, button {
+h1, h2, h3, h4, h5, h6, button, #button, .button, button#button {
 	text-transform: uppercase;
 }
 
@@ -54,6 +56,10 @@ label.error {
 	.game .label-remaining.team-blue {
 	color: var(--team-color-blue);
 }
+.game.game-won #button-next-team {
+	/* if a game was won, reset the button color */
+	color: var(--lumo-body-text-color);
+}
 
 .game #game-area {
 	position: relative;
@@ -81,22 +87,28 @@ label.error {
     justify-content: space-between;
 	
 	text-transform: uppercase;
+	
+	border-style: solid;
+	border-width: thick;
+	border-color: transparent;
+	
+	box-sizing: border-box;
 }
 
 .game-field.game-field-spymaster .game-field-cell {
 	cursor: wait;
 	pointer-events: none;
 }
-.game-field.game-won {
+.game.game-won.team-red .game-field {
+	border-color: var(--team-color-red);
+}
+.game.game-won.team-blue .game-field {
+	border-color: var(--team-color-blue);
+}
+.game.game-won .game-field {
 	pointer-events: none;
 }
-.game-field.game-won.game-won-red {
-	background-color: var(--team-color-red);
-}
-.game-field.game-won.game-won-blue {
-	background-color: var(--team-color-blue);
-}
-.game-field.game-won .game-field-cell {
+.game.game-won .game-field .game-field-cell {
 	cursor: default;
 }
 
@@ -121,7 +133,7 @@ label.error {
 	pointer-events: none;
 }
 .game-field .game-field-cell.game-field-cell-killer.game-field-cell-flipped, .game-field.game-field-spymaster .game-field-cell.game-field-cell-killer {
-	background-color: var(--lumo-shade);
+	background-color: var(--cell-color-killer-flipped);
 }
 .game-field .game-field-cell.game-field-cell-red.game-field-cell-flipped, .game-field.game-field-spymaster .game-field-cell.game-field-cell-red {
 	background-color: var(--team-color-red);
